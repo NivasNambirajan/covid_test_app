@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<style>
+
+/* paths with class "hovered" need to be selected here, too */
+
+.counties .hovered, .counties :hover {
+  fill: lightsalmon;
+  fill-opacity: 0.8;
+}
+
+.counties {
+  background-color: lightblue;
+  background-color-opacity: 0.5;
+  fill: lightblue;
+  transition: background-color 0.6s;
+}
+
+.county-borders {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 0.2px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-opacity: 0.8;
+  pointer-events: none;
+}
+
+.state-borders {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 0.6px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-opacity: 0.8;
+  pointer-events: none;
+}
+
+.aligner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+</style>
+<div class="aligner">
+<svg width="960" height="600"></svg>
+</div>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://d3js.org/topojson.v2.min.js"></script>
+<script>
+
+var svg = d3.select("svg");
+
+var path = d3.geoPath();
+
+d3.json("https://d3js.org/us-10m.v1.json", function(error, us) {
+  if (error) throw error;
+  
+  svg.append("g")
+    .attr("class", "states")
+    .selectAll("path")
+    .data(topojson.feature(us, us.objects.states).features)
+    .enter()
+    .append("path")
+    .attr("d", path);
+
+  svg.append("g")
+    .attr("class", "counties")
+    .selectAll("path")
+    .data(topojson.feature(us, us.objects.counties).features)
+    .enter()
+    .append("path")
+    .attr("d", path);
+
+  // the following block is new, adding JS events
+  let hoverEnabled = false;
+  svg.on('mousedown', x => hoverEnabled = true)
+    .on('mouseup', x => hoverEnabled = false)
+  svg.selectAll('.counties path').on('mouseover', function() {
+    if (hoverEnabled) {
+      this.classList.add('hovered');
+    }
+  });
+  
+  
+  svg.append("path")
+     .attr("class", "county-borders")
+    .attr("d", path(topojson.mesh(us, us.objects.counties, function(a, b) { return a !== b; })));
+	
+  svg.append("path")
+     .attr("class", "state-borders")
+    .attr("d", path(topojson.mesh(us, us.objects.states, function(a, b) { return a !== b; })));
+	
+//Container for the gradients
+var defs = svg.append("defs");
+
+//Filter for the outside glow
+var filter = defs.append("filter")
+    .attr("id","glow");
+filter.append("feGaussianBlur")
+    .attr("stdDeviation","3.5")
+    .attr("result","coloredBlur");
+var feMerge = filter.append("feMerge");
+feMerge.append("feMergeNode")
+    .attr("in","coloredBlur");
+feMerge.append("feMergeNode")
+    .attr("in","SourceGraphic");
+	
+d3.selectAll(".counties")
+    .style("filter", "url(#glow)");
+
+d3.selectAll(".county-borders")
+    .style("filter", "url(#glow)");
+	
+d3.selectAll(".state-borders")
+    .style("filter", "url(#glow)");
+	
+});
+
+</script>

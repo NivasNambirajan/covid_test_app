@@ -1,0 +1,17 @@
+get data sources for ----------------------- Effectively Done
+	US counties - NYT
+	US states - NYT, covidtracking
+	World Countries - ECDC
+	World states - TBD
+	
+Draw basic map using d3 ------------------ Done
+Data cleaning for US Data ---------------- Done
+Visual feature control for map ----------- Done
+Attach data to map ----------------------- Done
+V0 visualization with hovering tooltip --- Done
+V1 viz with zoom ------------------------- In Progress
+V1.5 viz + hways+rivers
+V2 Chloropleth with tooltip
+V3 Chloropleth with state-select
+V4 Chloropleth+SS+timeseries graphs
+V5 C+SS+TS+ near-term forecasting

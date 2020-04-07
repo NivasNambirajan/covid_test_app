@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<style>
+
+/* paths with class "hovered" need to be selected here, too */
+
+h1, h2 {
+  line-height: 1em;
+  font-size: 1.75em;
+  font-weight: 900;
+  color: maroon;
+}
+
+h2.date {
+  margin: 10px 0px 0px 0px;
+  font-size: 1.3em;
+  font-weight: 700;
+}
+
+input {
+  display: block;
+  width: 200px;
+  margin: 10px 0px 0px 0px;
+}
+
+.counties .hovered, .counties :hover {
+  fill: lightsalmon;
+  fill-opacity: 0.8;
+}
+
+.counties {
+  background-color: silver;
+  background-color-opacity: 0.9;
+  fill: silver;
+  fill-opacity: 0.8;
+  transition: background-color 0.6s;
+}
+
+.county-borders {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 0.1px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-opacity: 0.2;
+  pointer-events: none;
+}
+
+.state-borders {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 0.15px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-opacity: 0.3;
+  pointer-events: none;
+}
+
+.mapaligner {
+  display: flex;
+  /* align-items: center; */
+  justify-content: center;
+}
+
+.content {
+  display:flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tooltip {
+  position: absolute;
+  padding: 7px;
+  font-size: 0.9em;
+  font-color: lightsalmon;
+  pointer-events: none;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+
+  -moz-box-shadow:    3px 3px 10px 0px rgba(0, 0, 0, 0.25);
+  -webkit-box-shadow: 3px 3px 10px 0px rgba(0, 0, 0, 0.25);
+  box-shadow:         3px 3px 10px 0px rgba(0, 0, 0, 0.25);
+}
+
+.tooltip p {
+  margin: 0;
+  padding: 0;
+}
+
+.tooltip table {
+  margin: 0;
+  padding: 0;
+  border-collapse: collapse;
+}
+</style>
+<body bgcolor="lightslategray">
+<div class="content">
+	<h1>COVID19 in U.S.</h1>
+</div>
+<div class="mapaligner">
+<div class="content">
+	<h2 class="date"></h2>
+</div>
+<div class="content">
+	<div class="slider"></div>
+</div>
+	<div id="map"></div>
+</div>
+<div class="content">
+<p>Source: New York Times.</p>
+</div>
+
+</body>
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script src="https://d3js.org/queue.v1.min.js"></script>
+<script src="https://d3js.org/topojson.v2.min.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+<script>
+	var covidData = {{ data.covid_data | safe }};
+</script>
+
+<script src="{{ url_for('static', filename="js/map_v1_fullstack.js")}}"></script>
+</html>
