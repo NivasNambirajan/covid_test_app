@@ -120,6 +120,7 @@ input {
 
 <script>
 	var covidData = {{ data.covid_data | safe }};
+	var popData = {{data.pop_data | safe }};
 </script>
 
 <script src="{{ url_for('static', filename="js/map_v1_fullstack.js")}}"></script>

@@ -4,6 +4,8 @@ var width = 1160;
 var height = 720;
 var factor = 1.1;
 
+
+//Function to scale and center map. Pain to deal with for scattering points on map - figure it out or replace.
 function scale (scaleFactor,width,height) {
 return d3.geoTransform({
 	point: function(x, y) {
@@ -15,6 +17,7 @@ return d3.geoTransform({
 
 var path = d3.geoPath().projection(scale(factor, width, height));
 
+
 var svg = d3.select("#map")
 	.append("svg")
 	.attr("width", width)
@@ -24,9 +27,14 @@ tooltip = d3.select("body").append("div")
 	.attr("class", "tooltip")
 	.style("opacity", 0);
 
-mapCovid(covidData);
+//Get FIPS codes for NYC counties: Kings, Queens, Bronx, NY, Richmond
+var nyc_counties = [36047, 36081, 36005, 36061, 36085]
 
-function mapCovid(data) {
+mapCovid(covidData, popData);
+
+
+
+function mapCovid(data, pop_data) {
 	d3.json("https://d3js.org/us-10m.v1.json").then(function(us) {
 		
 	  //Draw counties, county-borders and state-borders
@@ -68,10 +76,20 @@ function mapCovid(data) {
 			d.state = d.state;
 		});
 		
+	  pop_data.forEach(function(d) {
+			d.population = +d.population;
+			d.fips = +d.fips;
+	  });
+	  
+	  console.log("population data successfully accessed once");
 	  var dataByCountyByDate = d3.nest()
 			.key(function(d) { return d.fips;})
 			.key(function(d) { return d.date; })
 			.map(data);
+			
+	  var popByCounty = d3.nest()
+			.key(function(d) {return d.fips;})
+			.map(pop_data);
 	  window.dataByCountyByDate_g = dataByCountyByDate
 	  console.log(dataByCountyByDate);
 	  
@@ -95,8 +113,28 @@ function mapCovid(data) {
 		
 		
 	  counties.features.forEach(function(county) {
-			county.properties.dates = dataByCountyByDate["$"+String(+county.id)];
+			//Check for NYC
+			if (nyc_counties.includes(+county.id)) {
+			county.properties.dates = dataByCountyByDate["$7777777"]; }
+			
+			//continue normally otherwise
+			else {
+			county.properties.dates = dataByCountyByDate["$"+String(+county.id)];}
+			
+			//Not all counties have their population in the data by design. So handle this here.
+			//NYC counties will be dropped from this by design, so check for them separately below
+			// Assume NYC has been separately keyed with FIPS 7777777 in the population data upstream.
+			if (typeof popByCounty["$"+String(+county.id)] == 'undefined') {
+				if (nyc_counties.includes(+county.id)) {county.properties.population = popByCounty["$"+String(7777777)][0].population;}
+				else {
+				county.properties.population = 0;}
+				}
+			else {
+				county.properties.population = popByCounty["$"+String(+county.id)][0].population;
+				console.log("Found population: " + String(county.properties.population));
+			}
 		});
+	  
 	  
 	  console.log("Now drawing and coloring...");
 	  
@@ -182,7 +220,6 @@ function mapCovid(data) {
 	  //unfoundCounties.forEach(function(c) {console.log(c);});
 	  console.log("Number of counties found in data: "+String(countFound));
 	  console.log("Number of counties not found in data: "+String(countUnfound));
-	  console.log("Sum "+String(countFound+countUnfound)+" compared to "+String(countTotal));
 	  
 	  countyShapes
 			.on("mouseover", function(d) {
@@ -194,15 +231,8 @@ function mapCovid(data) {
 					var state = d.properties.dates[maxDate][0].state;
 					var cases =  d.properties.dates[maxDate][0].cases;
 					var deaths = d.properties.dates[maxDate][0].deaths;
-					var death_frac = 0.0;
-					if (deaths > cases) {deaths=cases; console.log("wtf...deaths>cases")}
-					if (cases==0) {var death_frac = 0.0;}
-						else {death_frac = 100*deaths/cases;}
-					tooltip.html("<g>"+
-						"<p><strong>" + d.properties.dates[maxDate][0].county + ", " + d.properties.dates[maxDate][0].state + "</strong></p>" +
-						"<table><tbody><tr><td class='wide'>Cases:</td><td>" + cases + "</td></tr>" +
-						"<tr><td>Deaths:</td><td>" + deaths + "</td></tr>" +
-						"<tr><td>Death Percent:</td><td>" + parseFloat(death_frac).toFixed(2)+"%" + "</td></tr></tbody></table>" +"</g>"
+					var pop = d.properties.population;
+					tooltip.html(tooltipContent(county, state, cases, deaths, pop)
 					)
 					.style("left", (d3.event.pageX + 15) + "px")
 					.style("top", (d3.event.pageY - 28) + "px");
@@ -283,4 +313,32 @@ function makeDots(polygon, numPoints, options) {
   points.complete = (points.length >= numPoints)
   
   return points
+}
+
+function tooltipContent(county, state, cases, deaths, pop) {
+	var death_frac = 0.0;
+	if (deaths > cases) {deaths=cases; console.log("wtf...deaths>cases")}
+	if (cases==0) {var death_frac = 0.0;}
+		else {death_frac = 100*deaths/cases;}
+	if (state !== 'Alaska') {
+		return "<g>"+
+				"<p><strong>" + county + ", " + state + "</strong></p>" +
+				"<table><tbody><tr><td class='wide'>Cases:</td><td>" + numberWithCommas(cases) + "</td></tr>" +
+				"<tr><td>Deaths:</td><td>" + numberWithCommas(deaths) + "</td></tr>" +
+				"<tr><td>Death Percent:</td><td>" + parseFloat(death_frac).toFixed(2)+"%" + "</td></tr>" + 
+				"<tr><td>Population:</td><td>" + numberWithCommas(pop) + "</td></tr></tbody></table>" + 
+				"<p>One Case Every " + numberWithCommas(Math.round(pop/cases)) + " people" + "</p></g>";
+	}
+	else {
+		return "<g>"+
+				"<p><strong>" + county + ", " + state + "</strong></p>" +
+				"<table><tbody><tr><td class='wide'>Cases:</td><td>" + numberWithCommas(cases) + "</td></tr>" +
+				"<tr><td>Deaths:</td><td>" + numberWithCommas(deaths) + "</td></tr>" +
+				"<tr><td>Death Percent:</td><td>" + parseFloat(death_frac).toFixed(2)+"%" + "</td></tr>" + 
+				"</tbody></table>";
+	}
+}
+
+function numberWithCommas(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
